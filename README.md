@@ -5,6 +5,6 @@
 Puthon 3.14+
 
 # Команды
-python -m pip install --upgrade pip\n
-python -m pip install -e ".[dev]"\n
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
 python -m pytest -q
