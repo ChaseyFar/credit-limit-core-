@@ -1,0 +1,25 @@
+# Виртуальное окружение
+.venv/
+
+# Кеш Python
+__pycache__/
+*.py[cod]
+
+# Кеш и отчёты тестов
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Метаданные установленного Python-пакета
+*.egg-info/
+build/
+dist/
+
+# Локальные переменные окружения и секреты
+.env
+.env.*
+
+# Настройки IDE и ОС
+.vscode/
+.idea/
+.DS_Store
