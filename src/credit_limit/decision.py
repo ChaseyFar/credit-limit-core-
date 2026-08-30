@@ -4,4 +4,6 @@ def calculate_max_request_amount(
         client_reserved_amount: int,
         product_max_limit: int,
         ) -> int:
-    raise NotImplementedError
+    available_client_limit = max(0, client_approved_limit-client_outstanding_debt-client_reserved_amount)
+    max_request_amount = min(product_max_limit, available_client_limit)
+    return max_request_amount
