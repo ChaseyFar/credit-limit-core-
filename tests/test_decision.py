@@ -1,5 +1,5 @@
 import pytest
-from credit_limit.decision import calculate_max_request_amount, validate_amount, ValidationError, validate_positive_amount
+from credit_limit.decision import *
 
 
 @pytest.mark.parametrize(
@@ -83,4 +83,43 @@ def test_validate_amount_and_field_positive(
 ) -> None:
     result = validate_amount(value=0, field=field)
     
+    assert result is None
+
+def test_validate_application_inputs_order() -> None:
+    result = validate_application_inputs(client_approved_limit=1,
+            client_outstanding_debt=1,
+            client_reserved_amount = 1,
+            product_max_limit = 0,
+            requested_amount = 0
+            )
+    
+    assert result == ValidationError(code="invalid_amount", field="requested_amount")
+
+@pytest.mark.parametrize(
+    (
+        "client_approved_limit",
+        "client_outstanding_debt",
+        "client_reserved_amount",
+        "product_max_limit",
+        "requested_amount"
+    ),
+    [
+        (0, 0, 0, 1, 1),
+        (1, 1, 1, 1, 1)
+    ]
+)
+def test_validate_application_inputs_positive(
+    client_approved_limit: object,
+    client_outstanding_debt: object,
+    client_reserved_amount: object,
+    product_max_limit: object,
+    requested_amount: object,
+) -> None:
+    result = validate_application_inputs(client_approved_limit=client_approved_limit,
+                client_outstanding_debt=client_outstanding_debt,
+                client_reserved_amount=client_reserved_amount,
+                product_max_limit=product_max_limit,
+                requested_amount=requested_amount
+                )
+
     assert result is None

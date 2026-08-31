@@ -39,4 +39,15 @@ def validate_application_inputs(
         product_max_limit: object,
         requested_amount: object,
         ) -> ValidationError | None:
-    raise NotImplementedError
+    for field_value, field_name in ((requested_amount, "requested_amount"), 
+                    (product_max_limit, "product_max_limit")):
+        result = validate_positive_amount(value=field_value, field=field_name)
+        if result is not None:
+            return result
+    for field_value, field_name in ((client_approved_limit, "client_approved_limit"), 
+                    (client_outstanding_debt, "client_outstanding_debt"), 
+                    (client_reserved_amount, "client_reserved_amount")):
+        result = validate_amount(value=field_value, field=field_name)
+        if result is not None:
+            return result
+    return None
