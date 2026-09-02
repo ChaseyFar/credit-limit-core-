@@ -5,6 +5,12 @@ class ValidationError:
     code: str
     field: str
 
+@dataclass(frozen=True)
+class ApplicationDecision:
+    decision: str
+    reason_code: str | None
+    allowed_amount: int
+
 
 def calculate_max_request_amount(
         client_approved_limit: int,
@@ -51,3 +57,44 @@ def validate_application_inputs(
         if result is not None:
             return result
     return None
+
+
+def evaluate_application(
+    client_approved_limit: object,
+    client_outstanding_debt: object,
+    client_reserved_amount: object,
+    product_max_limit: object,
+    requested_amount: object,
+) -> ValidationError | ApplicationDecision:
+    validation_result = validate_application_inputs(client_approved_limit=client_approved_limit,
+        client_outstanding_debt=client_outstanding_debt,
+        client_reserved_amount=client_reserved_amount,
+        product_max_limit=product_max_limit,
+        requested_amount=requested_amount
+    )
+    if validation_result is not None:
+        return validation_result
+    if requested_amount > product_max_limit:
+        return ApplicationDecision(
+            decision="rejected",
+            reason_code="request_exceeds_product_max_limit",
+            allowed_amount=product_max_limit,
+        )
+    max_request_amount = calculate_max_request_amount(
+        client_approved_limit=client_approved_limit,
+        client_outstanding_debt=client_outstanding_debt,
+        client_reserved_amount=client_reserved_amount,
+        product_max_limit=product_max_limit,
+    )
+    if requested_amount > max_request_amount:
+        return ApplicationDecision(
+            decision="rejected",
+            reason_code="request_exceeds_allowed_amount",
+            allowed_amount=max_request_amount,
+        )
+    return ApplicationDecision(
+        decision="approved",
+        reason_code=None,
+        allowed_amount=max_request_amount,
+    )
+

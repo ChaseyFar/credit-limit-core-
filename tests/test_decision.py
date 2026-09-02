@@ -1,6 +1,7 @@
 import pytest
+from pytest import MonkeyPatch
 from credit_limit.decision import *
-
+from credit_limit import decision
 
 @pytest.mark.parametrize(
     (
@@ -123,3 +124,162 @@ def test_validate_application_inputs_positive(
                 )
 
     assert result is None
+
+@pytest.mark.parametrize(
+    (
+        "client_approved_limit",
+        "client_outstanding_debt",
+        "client_reserved_amount",
+        "product_max_limit",
+        "requested_amount",
+        "expected_allowed_amount"
+    ),
+    [
+        (100_000_000, 40_000_000, 30_000_000, 30_000_000, 10_000_000, 30_000_000),
+        (100_000_000, 40_000_000, 30_000_000, 30_000_000, 30_000_000, 30_000_000)
+    ]
+)
+def test_evaluate_application_approve(
+    client_approved_limit: object,
+    client_outstanding_debt: object,
+    client_reserved_amount: object,
+    product_max_limit: object,
+    requested_amount: object,
+    expected_allowed_amount: object
+) -> None:
+    result = evaluate_application(client_approved_limit=client_approved_limit,
+                client_outstanding_debt=client_outstanding_debt,
+                client_reserved_amount=client_reserved_amount,
+                product_max_limit=product_max_limit,
+                requested_amount=requested_amount
+                )
+    assert result == ApplicationDecision(decision="approved", reason_code=None, allowed_amount=expected_allowed_amount)
+
+
+def test_evaluate_application_rejects_request_above_allowed_amount() -> None:
+    result = evaluate_application(client_approved_limit=100_000,
+        client_outstanding_debt=30_000,
+        client_reserved_amount=0,
+        product_max_limit=80_000,
+        requested_amount=70_001
+        )
+    assert result == ApplicationDecision(
+        decision="rejected",  
+        reason_code='request_exceeds_allowed_amount', 
+        allowed_amount=70_000)
+
+def test_evaluate_application_rejects_request_above_product_max_limit() -> None:
+    result = evaluate_application(
+        client_approved_limit=500_000,
+        client_outstanding_debt=0,
+        client_reserved_amount=0,
+        product_max_limit=100_000,
+        requested_amount=400_000,
+    )
+    assert result == ApplicationDecision(
+        decision="rejected",
+        reason_code="request_exceeds_product_max_limit",
+        allowed_amount=100_000,
+    )
+
+@pytest.mark.parametrize(
+    (
+        "client_approved_limit",
+        "client_outstanding_debt",
+        "client_reserved_amount",
+        "product_max_limit",
+        "requested_amount",
+        "expected_field"
+    ),
+    [
+        (-1, -1, -1, 0, 0, "requested_amount"),
+        (-1, -1, -1, 0, 1, "product_max_limit"),
+        (-1, -1, -1, 1, 1, "client_approved_limit"),
+        (0, -1, -1, 1, 1, "client_outstanding_debt"),
+        (0, 0, -1, 1, 1, "client_reserved_amount"),
+        (1, 1, 1, 1, None, "requested_amount"),
+        (0, 0, False, 1, 1, "client_reserved_amount"),
+        (1, 1, 1, "1", 1, "product_max_limit"),
+        ("1", 1, 1, 1, 1, "client_approved_limit"),
+        (1, 1.5, 1, 1, 1, "client_outstanding_debt")
+    ]
+)
+def test_evaluate_application_returns_validation_error(
+    client_approved_limit: object,
+    client_outstanding_debt: object,
+    client_reserved_amount: object,
+    product_max_limit: object,
+    requested_amount: object,
+    expected_field: str
+) -> None:
+    result = evaluate_application(client_approved_limit=client_approved_limit,
+        client_outstanding_debt=client_outstanding_debt,
+        client_reserved_amount=client_reserved_amount,
+        product_max_limit=product_max_limit,
+        requested_amount=requested_amount
+    )
+
+def test_evaluate_application_executes_no_calculation_after_exceeding_product_limit(
+    monkeypatch: MonkeyPatch
+) -> None:
+    def must_not_be_called(**_: object) -> int:
+        raise AssertionError("Calculation must not be called")
+    monkeypatch.setattr(decision, "calculate_max_request_amount", must_not_be_called)
+    result = evaluate_application(
+        client_approved_limit=500_000,
+        client_outstanding_debt=0,
+        client_reserved_amount=0,
+        product_max_limit=100_000,
+        requested_amount=400_000,
+    )
+    assert result == ApplicationDecision(
+        decision="rejected",
+        reason_code="request_exceeds_product_max_limit",
+        allowed_amount=100_000,
+    )
+
+@pytest.mark.parametrize(
+    (
+        "client_approved_limit",
+        "client_outstanding_debt",
+        "client_reserved_amount",
+        "product_max_limit",
+        "requested_amount",
+        "expected_result"
+    ),
+    [
+        (100_000, 30_000, 0, 80_000, 60_000, 
+            ApplicationDecision(decision="approved", reason_code=None, allowed_amount=70_000,)),
+        (100_000, 30_000, 0, 80_000, 70_000, 
+            ApplicationDecision(decision="approved", reason_code=None, allowed_amount=70_000,)),
+        (100_000, 30_000, 0, 80_000, 70_001, 
+            ApplicationDecision(decision="rejected", reason_code="request_exceeds_allowed_amount", allowed_amount=70_000,)),
+        (500_000, 0, 0, 100_000, 400_000, 
+            ApplicationDecision(decision="rejected", reason_code="request_exceeds_product_max_limit", allowed_amount=100_000,)),
+        (100_000, 80_000, 0, 50_000, 60_000, 
+            ApplicationDecision(decision="rejected", reason_code="request_exceeds_product_max_limit", allowed_amount=50_000,)),
+        (100_000, 40_000, 10_000, 80_000, 50_000, 
+            ApplicationDecision(decision="approved", reason_code=None, allowed_amount=50_000,)),
+        (100_000, 70_000, 30_000, 100_000, 1, 
+            ApplicationDecision(decision="rejected", reason_code="request_exceeds_allowed_amount", allowed_amount=0,)),
+        (100_000, 70_001, 30_000, 100_000, 1,
+            ApplicationDecision(decision="rejected", reason_code="request_exceeds_allowed_amount", allowed_amount=0,)),
+        (0, 0, 0, 10_000, 1, 
+            ApplicationDecision(decision="rejected", reason_code="request_exceeds_allowed_amount", allowed_amount=0,))
+    ]
+)
+def test_evaluate_application_full_scenario(
+    client_approved_limit: object,
+    client_outstanding_debt: object,
+    client_reserved_amount: object,
+    product_max_limit: object,
+    requested_amount: object,
+    expected_result: object
+) -> None:
+    result = evaluate_application(client_approved_limit=client_approved_limit,
+        client_outstanding_debt=client_outstanding_debt,
+        client_reserved_amount=client_reserved_amount,
+        product_max_limit=product_max_limit,
+        requested_amount=requested_amount
+    )
+    assert result == expected_result
