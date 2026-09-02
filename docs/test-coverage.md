@@ -2,7 +2,7 @@
 
 | Группа           | Сценарии                   | Статус  | Тест |
 | ---------------- | -------------------------- | ------- | -----|
-| Валидные решения | EX-01…EX-09                | covered | test_evaluate_application_full_scenario |
+| Доменные решения | EX-01…EX-09                | covered | test_evaluate_application_full_scenario |
 | Нарушения границ | EX-10…EX-15                | covered | test_evaluate_application_returns_validation_error |
 | Неверные типы    | str, float, bool, None     | covered | test_evaluate_application_returns_validation_error |
 | Ранний выход     | Превышен product_max_limit | covered | test_evaluate_application_executes_no_calculation_after_exceeding_product_limit |
