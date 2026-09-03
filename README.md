@@ -57,7 +57,7 @@
     - результат расчета доступной суммы
 
 # Требования
-Puthon 3.14+
+Python 3.14+
 
 # Команды
 python -m pip install --upgrade pip
