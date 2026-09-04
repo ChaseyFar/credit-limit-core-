@@ -7,4 +7,11 @@ class EvaluateApplicationRequest(BaseModel):
     product_max_limit: int
     requested_amount: int
 
+class EvaluateApplicationResponse(BaseModel):
+    decision: str
+    reason_code: str | None
+    allowed_amount: int
 
+class ValidationErrorResponse(BaseModel):
+    code: str
+    field: str
