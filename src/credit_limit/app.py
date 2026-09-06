@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+
 from .api_models import (
     EvaluateApplicationRequest,
     EvaluateApplicationResponse,
-    ValidationErrorResponse
+    ValidationErrorResponse,
 )
 from . import evaluate_application, ValidationError
 

@@ -1,12 +1,13 @@
 import pytest
+from pydantic import ValidationError
+
 from credit_limit.api_models import (
     EvaluateApplicationRequest,
     EvaluateApplicationResponse,
     ValidationErrorResponse,
 )
-from pydantic import ValidationError
 
-def test_evaluate_application_request_model() -> None:
+def test_evaluate_application_request_model_is_initiated_correctly() -> None:
     data = {
         "client_approved_limit": 100_000,
         "client_outstanding_debt": 30_000,
@@ -17,7 +18,7 @@ def test_evaluate_application_request_model() -> None:
     request = EvaluateApplicationRequest(**data)
     assert request.client_approved_limit == 100_000
 
-def test_evaluate_application_request_model_error() -> None:
+def test_evaluate_application_request_model_raises_validation_error_on_missing_field() -> None:
     data = {
         "client_approved_limit": 100_000,
         "client_outstanding_debt": 30_000,
@@ -27,7 +28,7 @@ def test_evaluate_application_request_model_error() -> None:
     with pytest.raises(ValidationError):
         EvaluateApplicationRequest(**data)
 
-def test_evaluate_application_response_model() -> None:
+def test_evaluate_application_response_model_is_initiated_correctly() -> None:
     data = {
         "decision": "approved",
         "reason_code": None,
@@ -36,7 +37,7 @@ def test_evaluate_application_response_model() -> None:
     response = EvaluateApplicationResponse(**data)
     assert response.reason_code is None   
 
-def test_evaluate_application_response_model_error() -> None:
+def test_evaluate_application_response_model_raises_validation_error_on_missing_field() -> None:
     data = {
         "decision": "approved",
         "reason_code": None,
@@ -44,7 +45,7 @@ def test_evaluate_application_response_model_error() -> None:
     with pytest.raises(ValidationError):
         EvaluateApplicationResponse(**data) 
 
-def test_validation_error_model() -> None:
+def test_validation_error_model_is_initiated_correctly() -> None:
     data = {
         "code": "invalid_amount",
         "field": "client_approved_limit",
@@ -52,7 +53,7 @@ def test_validation_error_model() -> None:
     response = ValidationErrorResponse(**data)
     assert response.code == "invalid_amount"  
 
-def test_validation_error_model_error() -> None:
+def test_validation_error_model_raises_validation_error_on_missing_field() -> None:
     data = {
         "code": 123,
         "field": "client_approved_limit",

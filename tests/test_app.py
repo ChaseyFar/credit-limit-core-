@@ -1,10 +1,11 @@
-from credit_limit.app import app
 from fastapi.testclient import TestClient
+
+from credit_limit.app import app
 
 def test_credit_limit_app_initialization() -> None:
     assert app.title == "Credit Limit Core API"
 
-def test_open_api() -> None:
+def test_openapi_includes_evaluate_application_responses() -> None:
     client = TestClient(app)
     response = client.get("/openapi.json")
     assert response.status_code == 200
