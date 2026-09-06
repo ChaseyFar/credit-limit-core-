@@ -60,3 +60,61 @@ def test_validation_error_model_raises_validation_error_when_code_is_not_a_strin
     }
     with pytest.raises(ValidationError):
         ValidationErrorResponse(**data)
+
+@pytest.mark.parametrize(
+
+    (
+        "decision",
+        "reason_code",
+        "field_name",
+    ),
+    [
+        ("declined", "request_exceeds_allowed_amount", "decision"),
+        ("rejected", "request_is_too_high", "reason_code"),
+        ("accepted", None, "decision"),
+        # ("aproved", "request_aproved"),
+        # ("rejected", None),
+    ]
+
+)
+def test_evaluate_application_response_model_raises_literal_error(
+    decision: str,
+    reason_code: str | None,
+    field_name: str,
+) -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        EvaluateApplicationResponse(
+            decision=decision,
+            reason_code=reason_code,
+            allowed_amount=100_000,
+        )
+    errors = exc_info.value.errors()
+    assert errors[0]["loc"] == (field_name,)
+    assert errors[0]["type"] == "literal_error"
+
+@pytest.mark.parametrize(
+
+    (
+        "code",
+        "field",
+        "field_name",
+    ),
+    [
+        ("insufficient_amount", "client_approved_limit", "code"),
+        ("invalid_amount", "allowed_amount", "field"),
+    ]
+
+)
+def test_application_validation_error_model_raises_literal_error(
+    code: str,
+    field: str,
+    field_name: str,
+) -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        ValidationErrorResponse(
+            code=code,
+            field=field,
+        )
+    errors = exc_info.value.errors()
+    assert errors[0]["loc"] == (field_name,)
+    assert errors[0]["type"] == "literal_error"
